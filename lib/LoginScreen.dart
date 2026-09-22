@@ -3,9 +3,96 @@ import 'package:flutter/material.dart';
 import 'HomePage.dart';
 import 'SignupScreen.dart';
 import 'icons/eva_icons.dart';
+import 'services/api_service.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState()=> _LoginScreenState();
+}
+class _LoginScreenState extends State<LoginScreen>{
+  final TextEditingController emailController=TextEditingController();
+  final TextEditingController passwordController=TextEditingController();
+
+  bool isLoading=false;
+  bool obscurePassword=true;
+
+  @override
+  void dispose(){
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> loginUser() async{
+    final email=emailController.text.trim();
+    final password=passwordController.text;
+
+    if(email.isEmpty||password.isEmpty){
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter email and password')
+        ),
+      );
+      return;
+    }
+    setState(() {
+      isLoading=true;
+    });
+    try{
+      final result=await ApiService.loginUser(email: email, password: password);
+
+      final statusCode=result['statusCode'];
+      final data= result['data'];
+      if(!mounted) return;
+
+      if(statusCode==200 && data['success']==true){
+        final token=data['token'];
+        final Map<String,dynamic> user= Map<String, dynamic>.from(data['user']);
+
+        print("✅ Login Success");
+        print("✅ Token: $token");
+        print("✅ User: $user");
+
+        await ApiService.saveLoginSession(token: token, user: user);
+
+        if(!mounted) return;
+
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(
+            data['message'] ?? 'Login Successful',
+          ),
+          )
+        );
+
+
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context)=>const Homepage()
+            )
+        );
+
+      }else{
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(
+            data['message'] ?? 'Login failed'
+          ),),
+        );
+      }
+    }catch(e){
+      if(!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Something Went Wrong : $e"),),
+      );
+    }finally{
+      if(mounted){
+        setState(() {
+          isLoading=false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +200,7 @@ class LoginScreen extends StatelessWidget {
                           SizedBox(
                             width: 370,
                             child: TextField(
+                              controller: emailController,
                               keyboardType: TextInputType.emailAddress,
                               style: const TextStyle(fontSize: 17),
                               decoration: InputDecoration(
@@ -146,10 +234,24 @@ class LoginScreen extends StatelessWidget {
                           SizedBox(
                             width: 370,
                             child: TextField(
+                              controller: passwordController,
                               keyboardType: TextInputType.visiblePassword,
-                              obscureText: true,
+                              obscureText: obscurePassword,
+
                               style: const TextStyle(fontSize: 17),
                               decoration: InputDecoration(
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    obscurePassword
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                  ),
+                                onPressed: (){
+                                    setState(() {
+                                      obscurePassword=!obscurePassword;
+                                    });
+                                },
+                                ),
                                 labelText: 'Password',
                                 labelStyle: const TextStyle(
                                   color: Color(0xFF147B72),
@@ -158,6 +260,7 @@ class LoginScreen extends StatelessWidget {
                                 ),
                                 prefixIcon: const Icon(Icons.lock),
                                 prefixIconColor: Colors.black,
+
                                 hintText: "Enter the password",
                                 hintStyle: const TextStyle(
                                     color: Colors.black, fontSize: 17),
@@ -182,13 +285,7 @@ class LoginScreen extends StatelessWidget {
                             width: 250,
                             height: 50,
                             child: OutlinedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => const Homepage()),
-                                );
-                              },
+                              onPressed: isLoading ? null:loginUser,
                               style: OutlinedButton.styleFrom(
                                 backgroundColor: const Color(0xFF147B72),
                                 foregroundColor: Colors.white,
@@ -197,7 +294,8 @@ class LoginScreen extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(18),
                                 ),
                               ),
-                              child: const Text(
+                              child: isLoading ? const CircularProgressIndicator():
+                              const Text(
                                 'Login',
                                 style: TextStyle(
                                   fontSize: 18,

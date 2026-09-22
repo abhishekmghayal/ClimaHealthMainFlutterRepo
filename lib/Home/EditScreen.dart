@@ -10,12 +10,128 @@ class Editscreen extends StatefulWidget{
 }
 
 class _EditscreenState extends State<Editscreen> {
+  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  void _showChangePasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          title: const Text(
+            "Change Password",
+            style: TextStyle(
+              color: Color(0xFF147B72),
+              fontFamily: "Tinos",
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                buildTextField(
+                  "Current Password",
+                  "Enter current password",
+                  controller: _currentPasswordController,
+                  obscureText: true,
+                  keyboardType: TextInputType.visiblePassword,
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 15, right: 10),
+                    child: HugeIcon(
+                      icon: HugeIconsStrokeRounded.circlePassword,
+                      color: const Color(0xFF147B72),
+                      size: 25,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                buildTextField(
+                  "New Password",
+                  "Enter new password",
+                  controller: _newPasswordController,
+                  obscureText: true,
+                  keyboardType: TextInputType.visiblePassword,
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 15, right: 10),
+                    child: HugeIcon(
+                      icon: HugeIconsStrokeRounded.circlePassword,
+                      color: const Color(0xFF147B72),
+                      size: 25,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                buildTextField(
+                  "Confirm Password",
+                  "Re-enter new password",
+                  controller: _confirmPasswordController,
+                  obscureText: true,
+                  keyboardType: TextInputType.visiblePassword,
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 15, right: 10),
+                    child: HugeIcon(
+                      icon: HugeIconsStrokeRounded.passwordValidation,
+                      color: const Color(0xFF147B72),
+                      size: 25,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Colors.red, fontSize: 16),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF147B72),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: const Text(
+                "Save",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
     return Scaffold(
-      body:Stack(
-        clipBehavior: Clip.none,
+      body: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(overscroll: false),
+        child: SingleChildScrollView(
+          child: Stack(
+            clipBehavior: Clip.none,
         children: [
           //Decto Layer
           Container(height: 120),
@@ -101,14 +217,9 @@ class _EditscreenState extends State<Editscreen> {
 
               children: [
                 const SizedBox(height: 270),
-                Expanded(
-                    child: SingleChildScrollView(
-
-
-                        child: Container(
-                          width: double.infinity,
-                          height: 830,
-                          child: Column(
+                Container(
+                  width: double.infinity,
+                  child: Column(
 
                             children: [
 
@@ -298,34 +409,39 @@ class _EditscreenState extends State<Editscreen> {
 
                                     const SizedBox(height: 10),
 
-                                    // Password
-                                    buildTextField(
-                                      "Password",
-                                      "Change Your Password",
-                                      keyboardType: TextInputType.visiblePassword,
-                                      prefixIcon: Padding(
-                                        padding: const EdgeInsets.only(left: 15, right: 10),
-                                        child: HugeIcon(
-                                          icon: HugeIconsStrokeRounded.circlePassword,
-                                          color: const Color(0xFF147B72),
-                                          size: 25,
+                                    // Change Password Button
+                                    SizedBox(
+                                      width: 370,
+                                      height: 60,
+                                      child: ElevatedButton(
+                                        onPressed: _showChangePasswordDialog,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.white,
+                                          side: const BorderSide(color: Color(0xFF0C524C), width: 2),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(30),
+                                          ),
+                                          elevation: 0,
                                         ),
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 10),
-
-                                    // Confirm Password
-                                    buildTextField(
-                                      "Confirm Password",
-                                      "Re-enter Confirm Password",
-                                      keyboardType: TextInputType.visiblePassword,
-                                      prefixIcon: Padding(
-                                        padding: const EdgeInsets.only(left: 15, right: 10),
-                                        child: HugeIcon(
-                                          icon: HugeIconsStrokeRounded.passwordValidation,
-                                          color: const Color(0xFF147B72),
-                                          size: 25,
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            HugeIcon(
+                                              icon: HugeIconsStrokeRounded.circlePassword,
+                                              color: const Color(0xFF147B72),
+                                              size: 25,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            const Text(
+                                              "Change your password",
+                                              style: TextStyle(
+                                                fontSize: 17,
+                                                fontWeight: FontWeight.bold,
+                                                fontFamily: "Tinos",
+                                                color: Color(0xFF147B72),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -385,14 +501,14 @@ class _EditscreenState extends State<Editscreen> {
                             ],
                           ),
                         )
-                    ),
-                ),
 
               ],
             )
           )
 
         ],
+      ),
+      ),
       ),
     );
   }
@@ -402,10 +518,14 @@ class _EditscreenState extends State<Editscreen> {
       String hint, {
         Widget? prefixIcon,
         TextInputType keyboardType = TextInputType.text,
+        TextEditingController? controller,
+        bool obscureText = false,
       }) {
     return SizedBox(
       width: 370,
       child: TextField(
+        controller: controller,
+        obscureText: obscureText,
         keyboardType: keyboardType,
         style: const TextStyle(
           fontSize: 17,

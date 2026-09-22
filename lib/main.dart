@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'SplashScreen.dart';
 
-void main() {
+import 'SplashScreen.dart';
+import 'services/api_service.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
+
+  await ApiService.testConnection();
 
   runApp(const MyApp());
 }

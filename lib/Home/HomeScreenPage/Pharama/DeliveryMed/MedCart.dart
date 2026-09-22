@@ -119,15 +119,11 @@ Divider()
               SizedBox(height: 20),
 
               /// Items
-              Container(
-                width: double.infinity,
-                height: 300,
-                child: Expanded(
-                  child: ListView(
-                    children: widget.selectedItems
-                        .map((item) => cartItem(item['medicine'], item['quantity']))
-                        .toList(),
-                  ),
+              Expanded(
+                child: ListView(
+                  children: widget.selectedItems
+                      .map((item) => cartItem(item['medicine'], item['quantity']))
+                      .toList(),
                 ),
               ),
               /// Subtotal

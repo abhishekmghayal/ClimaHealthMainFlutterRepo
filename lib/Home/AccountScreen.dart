@@ -9,6 +9,7 @@ import 'package:climahealth/LoginScreen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:climahealth/services/api_service.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -37,6 +38,69 @@ class _AccountScreenState extends State<AccountScreen> {
         const SnackBar(content: Text("Permission denied to access photos")),
       );
     }
+  }
+
+  void _showEditOptionsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          title: Text(
+            "Select Option",
+            style: TextStyle(
+              fontFamily: "Tinos",
+              color: const Color(0xFF0C524C),
+              fontWeight: FontWeight.bold,
+              fontSize: 18.sp,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Container(
+                  padding: EdgeInsets.all(8.w),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF147B72).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.edit, color: const Color(0xFF147B72), size: 20.sp),
+                ),
+                title: Text("Edit Profile", style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>  Editscreen(),
+                    ),
+                  );
+                },
+              ),
+              SizedBox(height: 10.h),
+              ListTile(
+                leading: Container(
+                  padding: EdgeInsets.all(8.w),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF147B72).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.photo_camera, color: const Color(0xFF147B72), size: 20.sp),
+                ),
+                title: Text("Change Profile Photo", style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.pop(context);
+                  pickImage();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -143,15 +207,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                           shape: BoxShape.circle,
                                         ),
                                         child: InkWell(
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    Editscreen(),
-                                              ),
-                                            );
-                                          },
+                                          onTap: () => _showEditOptionsDialog(context),
                                           child: Icon(
                                             Icons.edit_outlined,
                                             size: 15.sp,
@@ -300,7 +356,9 @@ class _AccountScreenState extends State<AccountScreen> {
                                                 fontSize: 14.sp)),
                                       ),
                                       TextButton(
-                                        onPressed: () {
+                                        onPressed: () async {
+                                          await ApiService.logout();
+                                          if (!context.mounted) return;
                                           Navigator.pop(context);
                                           Navigator.pushAndRemoveUntil(
                                             context,
@@ -488,7 +546,9 @@ class _AccountScreenState extends State<AccountScreen> {
                                     Text("Delete Photo",
                                         style: TextStyle(
                                             color: Colors.red,
-                                            fontSize: 12.sp)),
+                                            fontSize: 12.sp
+                                        )
+                                    ),
                                   ],
                                 ),
                               ),

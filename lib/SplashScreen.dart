@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'StartScreen.dart';
+import 'HomePage.dart';
+import 'services/api_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -29,11 +31,31 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     ));
 
     _animationController.forward().then((_) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) =>  StartScreen()),
-      );
+      _checkAuthAndNavigate();
     });
+  }
+
+  Future<void> _checkAuthAndNavigate() async {
+    bool isLogged = await ApiService.isLoggedIn();
+    if (isLogged) {
+      String status = await ApiService.validateToken();
+      if (!mounted) return;
+      if (status == 'valid' || status == 'network_error') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Homepage()),
+        );
+        return;
+      } else {
+        await ApiService.logout();
+      }
+    }
+    
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => StartScreen()),
+    );
   }
 
   @override

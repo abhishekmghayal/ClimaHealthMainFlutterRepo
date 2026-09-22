@@ -3,9 +3,90 @@ import 'package:flutter/material.dart';
 // Adjust based on your actual imports
 import 'LoginScreen.dart';
 import 'icons/eva_icons.dart';
+import 'services/api_service.dart';
 
-class SignupScreen extends StatelessWidget {
+class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
+
+  @override
+  State<SignupScreen> createState() => _SignupScreenState();
+}
+
+class _SignupScreenState extends State<SignupScreen>{
+
+
+
+  final TextEditingController fullNameController= TextEditingController();
+  final TextEditingController mobileController= TextEditingController();
+  final TextEditingController emailController= TextEditingController();
+  final TextEditingController passwordController= TextEditingController();
+  final TextEditingController confirmPasswordController= TextEditingController();
+
+  bool isLoading=false;
+
+
+  Future<void> registerUser() async{
+    if (fullNameController.text.trim().isEmpty ||
+        mobileController.text.trim().isEmpty ||
+        emailController.text.trim().isEmpty ||
+        passwordController.text.isEmpty ||
+        confirmPasswordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please fill all fields"),
+        ),
+      );
+      return;
+    }
+    if (passwordController.text != confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Passwords do not match"),
+        ),
+      );
+      return;
+    }
+    setState(() {
+      isLoading = true;
+    });
+    final response = await ApiService.registerUser(
+      fullName: fullNameController.text.trim(),
+      mobile: mobileController.text.trim(),
+      email: emailController.text.trim(),
+      password: passwordController.text,
+    );
+    if (!mounted) return;
+
+    setState(() {
+      isLoading = false;
+    });
+
+
+    if (response["success"] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            response["message"] ?? "Registration successful",
+          ),
+        ),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const LoginScreen(),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            response["message"] ?? "Registration failed",
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +195,7 @@ class SignupScreen extends StatelessWidget {
                               width: 370,
                               child: TextField(
                                 keyboardType: TextInputType.text,
+                                controller: fullNameController,
                                 style: const TextStyle(fontSize: 17),
                                 decoration: InputDecoration(
                                     labelText: 'Full Name',
@@ -146,6 +228,7 @@ class SignupScreen extends StatelessWidget {
                             SizedBox(
                               width: 370,
                               child: TextField(
+                                controller: mobileController,
                                 keyboardType: TextInputType.number,
                                 style: const TextStyle(fontSize: 17),
                                 decoration: InputDecoration(
@@ -179,6 +262,7 @@ class SignupScreen extends StatelessWidget {
                             SizedBox(
                               width: 370,
                               child: TextField(
+                                controller: emailController,
                                 keyboardType: TextInputType.emailAddress,
                                 style: const TextStyle(fontSize: 17),
                                 decoration: InputDecoration(
@@ -212,6 +296,7 @@ class SignupScreen extends StatelessWidget {
                             SizedBox(
                               width: 370,
                               child: TextField(
+                                controller: passwordController,
                                 keyboardType: TextInputType.visiblePassword,
                                 style: const TextStyle(fontSize: 17),
                                 decoration: InputDecoration(
@@ -245,6 +330,7 @@ class SignupScreen extends StatelessWidget {
                             SizedBox(
                               width: 370,
                               child: TextField(
+                                controller: confirmPasswordController,
                                 keyboardType: TextInputType.visiblePassword,
                                 style: const TextStyle(fontSize: 17),
                                 decoration: InputDecoration(
@@ -279,12 +365,7 @@ class SignupScreen extends StatelessWidget {
                               width: 250,
                               height: 50,
                               child: OutlinedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                                  );
-                                },
+                                onPressed: isLoading ? null : registerUser,
                                 style: OutlinedButton.styleFrom(
                                   backgroundColor: const Color(0xFF147B72),
                                   foregroundColor: Colors.white,
@@ -293,7 +374,14 @@ class SignupScreen extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(18),
                                   ),
                                 ),
-                                child: const Text(
+                                child: isLoading ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                ):const Text(
                                   'SignUp',
                                   style: TextStyle(fontSize: 18),
                                 ),
