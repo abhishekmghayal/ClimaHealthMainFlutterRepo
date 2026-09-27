@@ -90,6 +90,58 @@ class ApiService {
     }
   }
 
+  //Update User Profile API
+  static Future<String,dynamic> updateProfile({
+    required String token,
+    required String fullName,
+    required String mobile,
+    required String email,
+    String? bloodGroup,
+    double? height,
+    String? birthDate,
+}) async{
+    try{
+      final response= await http.put(
+        Uri.parse("$baseUrl/api/user/profile"),
+        headers: {
+          "Content-Type":"application/json",
+          "Authorization":"Bearer $token",
+        },
+        body: jsonEncode({
+          "fullName":fullName,
+          "mobile":mobile,
+          "email":email,
+          "bloodGroup":bloodGroup,
+          "height":height,
+          "birthDate":birthDate,
+        }),
+      );
+      final data =jsonDecode(response.body);
+
+      print("‼️‼️ Update Profile Status:${response.statusCode}");
+      print("‼️‼️ Update Profile Response:${response.body}");
+
+      return{
+        "statusCode":response.statusCode,
+        "data":data
+      };
+    }catch(e){
+      print("Update profile error: $e");
+      return{
+        "statusCode":500,
+        "data":{
+          "success":false,
+          "message":"Unable to connect to server"
+        }
+      };
+    }
+  }
+
+
+
+
+
+
   static Future<void> saveLoginSession({
     required String token,
     required Map<String,dynamic> user,
