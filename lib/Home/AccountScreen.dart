@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:climahealth/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -22,20 +23,165 @@ class _AccountScreenState extends State<AccountScreen> {
   File? profileImage;
   bool isDeleted = false;
   final ImagePicker picker = ImagePicker();
+  String fullName = "";
+  String email = "";
+  String? profileImageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCachedProfileImage();
+    _loadUserData();
+  }
+
+  Future<void> _loadCachedProfileImage() async {
+    final cachedImage = await ApiService.getProfileImage();
+    if (cachedImage != null && cachedImage.isNotEmpty && mounted) {
+      String sanitizedPath = cachedImage;
+      if (!sanitizedPath.startsWith('/')) {
+        sanitizedPath = '/$sanitizedPath';
+      }
+      setState(() {
+        profileImageUrl = "${ApiService.baseUrl}$sanitizedPath";
+      });
+    }
+  }
+
+  Widget _buildProfileImage({required double radius, String fallbackAsset = "assets/images/default_profile.png"}) {
+    if (isDeleted) {
+      return CircleAvatar(radius: radius, backgroundImage: AssetImage(fallbackAsset));
+    } else if (profileImageUrl != null && profileImageUrl!.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          profileImageUrl!,
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            print("Profile Image Error: $error");
+            return CircleAvatar(radius: radius, backgroundImage: AssetImage(fallbackAsset));
+          },
+        ),
+      );
+    } else if (profileImage != null) { 
+      return CircleAvatar(radius: radius, backgroundImage: FileImage(profileImage!));
+    } else {
+      return CircleAvatar(radius: radius, backgroundImage: AssetImage(fallbackAsset));
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    final result = await ApiService.getProfile();
+
+    if (!mounted) return;
+
+    if (result["statusCode"] == 200 &&
+        result["data"]["success"] == true) {
+      final user = result["data"]["user"];
+
+      setState(() {
+        fullName = user["fullName"] ?? "";
+        email = user["email"] ?? "";
+
+        if (user["profileImage"] != null &&
+            user["profileImage"].toString().isNotEmpty) {
+          String sanitizedPath = user["profileImage"].toString();
+          if (!sanitizedPath.startsWith('/')) {
+            sanitizedPath = '/$sanitizedPath';
+          }
+          profileImageUrl = "${ApiService.baseUrl}$sanitizedPath";
+          print("Profile image from API: ${user["profileImage"]}");
+          print("Final profile image URL: $profileImageUrl");
+        }
+      });
+      
+      if (user["profileImage"] != null && user["profileImage"].toString().isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("profileImage", user["profileImage"].toString());
+      }
+    }
+  }
 
   Future<void> pickImage() async {
     var status = await Permission.photos.request();
+
     if (status.isGranted) {
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+      );
+
       if (image != null) {
         setState(() {
           profileImage = File(image.path);
           isDeleted = false;
         });
+
+        // Get logged-in user's token
+        final token = await ApiService.getToken();
+
+        if (token == null || token.isEmpty) {
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Please login again"),
+            ),
+          );
+
+          return;
+        }
+
+        // Upload profile image to backend
+        final result = await ApiService.uploadProfileImage(
+          token: token,
+          imagePath: image.path,
+        );
+
+        final data = result["data"];
+
+        if (!mounted) return;
+
+        if (result["statusCode"] == 200 && data["success"] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Profile image updated successfully"),
+              backgroundColor: Color(0xFF0C524C),
+            ),
+          );
+          
+          final uploadedProfileImage = data["profileImage"];
+          if (uploadedProfileImage != null) {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString("profileImage", uploadedProfileImage.toString());
+            
+            String sanitizedPath = uploadedProfileImage.toString();
+            if (!sanitizedPath.startsWith('/')) {
+              sanitizedPath = '/$sanitizedPath';
+            }
+            
+            setState(() {
+               profileImage = null; // Don't rely on local path
+               profileImageUrl = "${ApiService.baseUrl}$sanitizedPath";
+            });
+            print("Uploaded profile image from API: $uploadedProfileImage");
+            print("Final uploaded profile image URL: $profileImageUrl");
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                data["message"] ?? "Failed to upload profile image",
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Permission denied to access photos")),
+        const SnackBar(
+          content: Text("Permission denied to access photos"),
+        ),
       );
     }
   }
@@ -186,15 +332,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                             width: 2.w,
                                           ),
                                         ),
-                                        child: CircleAvatar(
-                                          radius: 38.r,
-                                          backgroundImage: isDeleted
-                                              ? const AssetImage("assets/images/default_profile.png")
-                                              : (profileImage != null
-                                              ? FileImage(profileImage!)
-                                              : const AssetImage("assets/images/profile.webp"))
-                                          as ImageProvider,
-                                        ),
+                                        child: _buildProfileImage(radius: 38.r),
                                       ),
                                     ),
                                     Positioned(
@@ -225,7 +363,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                     CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        "Abhishek Ghayal",
+                                        fullName,
                                         style: TextStyle(
                                           fontSize: 21.sp,
                                           fontWeight: FontWeight.bold,
@@ -235,7 +373,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                       SizedBox(height: 4.h),
                                       Text(
 
-                                        "abhishekmghayal@gmail.com",
+                                        email,
 
                                         style: TextStyle(
                                           fontSize: 12.sp,
@@ -561,14 +699,9 @@ class _AccountScreenState extends State<AccountScreen> {
                           child: AnimatedScale(
                             scale: 1,
                             duration: const Duration(milliseconds: 200),
-                            child: CircleAvatar(
+                            child: _buildProfileImage(
                               radius: 130.r,
-                              backgroundImage: isDeleted
-                                  ? const AssetImage("assets/images/default_profile.png")
-                                  : (profileImage != null
-                                  ? FileImage(profileImage!)
-                                  : const AssetImage("assets/images/profile.webp"))
-                              as ImageProvider,
+                              fallbackAsset: "assets/images/profile.webp",
                             ),
                           ),
                         ),

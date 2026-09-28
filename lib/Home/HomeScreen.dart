@@ -10,6 +10,7 @@ import 'HomeScreenPage/Doctor/NearDoctorScreen.dart';
 import 'HomeScreenPage/Specialisation/DoctorListScreen.dart';
 import 'HomeScreenPage/Specialisation/SpecializeDoctorScreen.dart'; // for Doctor model
 
+import 'package:climahealth/services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,7 +20,23 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final String username = "Abhishek";
+  String username = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final fullName = await ApiService.getSavedFullName();
+
+    if (!mounted) return;
+
+    setState(() {
+      username = fullName?.split(" ").first ?? "";
+    });
+  }
 
 
   //TODO: This is the Custom Card View For Showing the doctor Sepecialtion

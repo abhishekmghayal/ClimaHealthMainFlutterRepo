@@ -12,7 +12,7 @@ Future<void> main() async {
     DeviceOrientation.portraitUp,
   ]);
 
-  await ApiService.testConnection();
+  ApiService.testConnection();
 
   runApp(const MyApp());
 }

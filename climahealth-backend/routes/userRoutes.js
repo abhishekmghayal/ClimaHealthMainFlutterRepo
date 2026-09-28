@@ -1,10 +1,12 @@
 const express=require("express");
 
 const authMiddleware=require("../middleware/authMiddleware");
+const upload = require("../middleware/uploadMiddleware");
 const {
     getProfile,
     updateProfile,
-    changePassword
+    changePassword,
+    uploadProfileImage
 }=require("../controllers/userController");
 
 const router=express.Router();
@@ -22,6 +24,12 @@ router.put(
     "/change-password",
     authMiddleware,
     changePassword
+);
+router.put(
+    "/profile/image",
+    authMiddleware,
+    upload.single("profileImage"),
+    uploadProfileImage
 );
 
 module.exports=router;

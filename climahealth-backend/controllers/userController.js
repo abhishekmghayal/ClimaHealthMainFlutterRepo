@@ -20,7 +20,11 @@ const getProfile=async (req,res)=>{
                 id:user._id,
                 fullName:user.fullName,
                 mobile:user.mobile,
-                email:user.email
+                email:user.email,
+                bloodGroup:user.bloodGroup,
+                height:user.height,
+                birthDate:user.birthDate,
+                profileImage: user.profileImage
             }
         });
     }catch(error){
@@ -169,8 +173,58 @@ const changePassword=async (req,res)=>{
     }
 };
 
+
+
+const uploadProfileImage = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "Profile image is required"
+            });
+        }
+
+        const imageUrl = `/uploads/${req.file.filename}`;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {
+                profileImage: imageUrl
+            },
+            {
+                new: true
+            }
+        ).select("-password");
+
+        if (!updatedUser) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Profile image uploaded successfully",
+            profileImage: imageUrl
+        });
+
+    } catch (error) {
+        console.error("Upload profile image error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Server Error"
+        });
+    }
+};
+
+
 module.exports={
     getProfile,
     updateProfile,
-    changePassword
+    changePassword,
+    uploadProfileImage
 };

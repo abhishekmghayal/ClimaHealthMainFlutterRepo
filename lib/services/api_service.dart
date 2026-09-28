@@ -1,10 +1,12 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 
 class ApiService {
-  static const String baseUrl="http://10.0.2.2:3000";
-  //static const String baseUrl="http://10.88.45.86:3000";
+  //static const String baseUrl="http://10.0.2.2:3000";
+  static const String baseUrl="http://10.205.29.86:3000";
 
 
 
@@ -12,7 +14,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse("$baseUrl/"),
-      );
+      ).timeout(const Duration(seconds: 5));
 
       print("‼️‼️‼️‼️API Status: ${response.statusCode}");
       print("‼️‼️‼️‼️API Response: ${response.body}");
@@ -98,7 +100,7 @@ class ApiService {
   }
 
   //Update User Profile API
-  static Future<String,dynamic> updateProfile({
+  static Future<Map<String,dynamic>> updateProfile({
     required String token,
     required String fullName,
     required String mobile,
@@ -144,10 +146,124 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> uploadProfileImage({
+    required String token,
+    required String imagePath,
+  }) async {
+    try {
+      final request = http.MultipartRequest(
+        'PUT',
+        Uri.parse("$baseUrl/api/user/profile/image"),
+      );
+
+      request.headers['Authorization'] = 'Bearer $token';
+
+      final mimeType = lookupMimeType(imagePath);
+
+      if (mimeType == null) {
+        return {
+          "statusCode": 400,
+          "data": {
+            "success": false,
+            "message": "Invalid image file",
+          }
+        };
+      }
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'profileImage',
+          imagePath,
+          contentType: MediaType.parse(mimeType),
+        ),
+      );
+
+      final response = await request.send();
+
+      final responseBody =
+      await response.stream.bytesToString();
+
+      print("‼️‼️ Upload Image Status: ${response.statusCode}");
+      print("‼️‼️ Upload Image Response: $responseBody");
+
+      final data = jsonDecode(responseBody);
+
+      return {
+        "statusCode": response.statusCode,
+        "data": data,
+      };
+    } catch (e) {
+      print("Upload profile image error: $e");
+
+      return {
+        "statusCode": 500,
+        "data": {
+          "success": false,
+          "message": "Unable to connect to server",
+        }
+      };
+    }
+  }
 
 
 
 
+
+
+
+  static Future<Map<String, dynamic>> getProfile() async {
+    try {
+      final token = await getToken();
+
+      if (token == null || token.isEmpty) {
+        return {
+          "statusCode": 401,
+          "data": {
+            "success": false,
+            "message": "User is not logged in"
+          }
+        };
+      }
+
+      final response = await http.get(
+        Uri.parse("$baseUrl/api/user/profile"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final data = jsonDecode(response.body);
+
+      print("‼️‼️ Get Profile Status: ${response.statusCode}");
+      print("‼️‼️ Get Profile Response: ${response.body}");
+
+      return {
+        "statusCode": response.statusCode,
+        "data": data,
+      };
+    } catch (e) {
+      print("Get profile error: $e");
+
+      return {
+        "statusCode": 500,
+        "data": {
+          "success": false,
+          "message": "Unable to connect to server"
+        }
+      };
+    }
+  }
+
+  static Future<String?> getSavedFullName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("fullName");
+  }
+
+  static Future<String?> getSavedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("email");
+  }
 
   static Future<void> saveLoginSession({
     required String token,
@@ -160,10 +276,16 @@ class ApiService {
     await prefs.setString("fullName", user["fullName"] ?? "");
     await prefs.setString("mobile", user["mobile"] ?? "");
     await prefs.setString("email", user["email"]??"");
+    
+    await prefs.setString("profileImage", user["profileImage"] ?? "");
   }
   static Future<String?> getToken() async{
     final prefs= await SharedPreferences.getInstance();
     return prefs.getString("token");
+  }
+  static Future<String?> getProfileImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("profileImage");
   }
 
   static Future<bool> isLoggedIn() async{

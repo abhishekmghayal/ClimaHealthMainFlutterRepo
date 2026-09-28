@@ -37,6 +37,11 @@ const userSchema=new mongoose.Schema(
         birthDate:{
             type:Date,
             required:false
+        },
+        profileImage: {
+            type: String,
+            required: false,
+            trim: true
         }
     },
 

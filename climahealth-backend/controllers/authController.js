@@ -116,7 +116,8 @@ const loginUser=async (req,res)=>{
                 id:user._id,
                 fullName:user.fullName,
                 mobile:user.mobile,
-                email:user.email
+                email:user.email,
+                profileImage:user.profileImage
             }
         });
 

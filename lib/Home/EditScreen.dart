@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:climahealth/icons/eva_icons.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hugeicons/styles/stroke_rounded.dart';
+import 'package:climahealth/services/api_service.dart';
 
 class Editscreen extends StatefulWidget{
   @override
@@ -13,18 +14,123 @@ class _EditscreenState extends State<Editscreen> {
 
 
 
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _bloodGroupController = TextEditingController();
+  final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _birthDateController = TextEditingController();
+  final TextEditingController _mobileController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+
 
   final TextEditingController _currentPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  String? _convertDate(String date) {
+    if (date.isEmpty) return null;
+
+    final parts = date.split('/');
+
+    if (parts.length != 3) return date;
+
+    return "${parts[2]}-${parts[1]}-${parts[0]}";
+  }
+  @override
   void dispose() {
+
+    _nameController.dispose();
+    _bloodGroupController.dispose();
+    _heightController.dispose();
+    _birthDateController.dispose();
+    _mobileController.dispose();
+    _emailController.dispose();
+
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
+
+  Future<void> _loadProfile() async {
+    final result = await ApiService.getProfile();
+
+    if (!mounted) return;
+
+    final data = result["data"];
+
+    if (result["statusCode"] == 200 && data["success"] == true) {
+      final user = data["user"];
+
+      setState(() {
+        _nameController.text = user["fullName"] ?? "";
+        _mobileController.text = user["mobile"] ?? "";
+        _emailController.text = user["email"] ?? "";
+        _bloodGroupController.text = user["bloodGroup"] ?? "";
+        _heightController.text = user["height"]?.toString() ?? "";
+
+        if (user["birthDate"] != null) {
+          final date = DateTime.parse(user["birthDate"]);
+
+          _birthDateController.text =
+          "${date.day.toString().padLeft(2, '0')}/"
+              "${date.month.toString().padLeft(2, '0')}/"
+              "${date.year}";
+        } else {
+          _birthDateController.text = "";
+        }
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            data["message"] ?? "Failed to load profile",
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _updateProfile() async{
+    final token = await ApiService.getToken();
+    final result = await ApiService.updateProfile(
+      token: token!,
+      fullName: _nameController.text.trim(),
+      mobile: _mobileController.text.trim(),
+      email: _emailController.text.trim(),
+      bloodGroup: _bloodGroupController.text.trim(),
+      height: double.tryParse(_heightController.text.trim()),
+      birthDate: _convertDate(_birthDateController.text.trim()),
+    );
+    final data=result["data"];
+    if(!mounted) return;
+    if(result["statusCode"]==200 && data["success"]==true){
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profile Updated Successfully"),
+        backgroundColor: Color(0xFF0C524C),
+        )
+      );
+      Navigator.pop(context);
+    }else{
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            data["message"] ?? "Failed to update profile",
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+
+
 
   void _showChangePasswordDialog() {
     showDialog(
@@ -273,6 +379,7 @@ class _EditscreenState extends State<Editscreen> {
                                     buildTextField(
                                       "Name",
                                       "Enter the Name of User",
+                                      controller: _nameController,
                                       prefixIcon: Padding(
                                         padding: const EdgeInsets.only(left: 15, right: 10),
                                         child: HugeIcon(
@@ -289,6 +396,7 @@ class _EditscreenState extends State<Editscreen> {
                                     buildTextField(
                                       "Blood Group",
                                       "Change Your Blood Group",
+                                      controller: _bloodGroupController,
                                       prefixIcon: Padding(
                                         padding: const EdgeInsets.only(left: 15, right: 10),
                                         child: HugeIcon(
@@ -305,6 +413,7 @@ class _EditscreenState extends State<Editscreen> {
                                     buildTextField(
                                       "Height (CM)",
                                       "Enter Your Height",
+                                      controller: _heightController,
                                       keyboardType: TextInputType.number,
                                       prefixIcon: Padding(
                                         padding: const EdgeInsets.only(left: 15, right: 10),
@@ -322,6 +431,7 @@ class _EditscreenState extends State<Editscreen> {
                                     buildTextField(
                                       "Birth Date",
                                       "Enter Your Birth Date",
+                                      controller: _birthDateController,
                                       keyboardType: TextInputType.number,
                                       prefixIcon: Padding(
                                         padding: const EdgeInsets.only(left: 15, right: 10),
@@ -383,6 +493,7 @@ class _EditscreenState extends State<Editscreen> {
                                     buildTextField(
                                       "Mobile No",
                                       "Enter the Mobile No.",
+                                      controller: _mobileController,
                                       keyboardType: TextInputType.phone,
                                       prefixIcon: Padding(
                                         padding: const EdgeInsets.only(left: 15, right: 10),
@@ -400,6 +511,7 @@ class _EditscreenState extends State<Editscreen> {
                                     buildTextField(
                                       "Email",
                                       "Enter the Email Address",
+                                      controller: _emailController,
                                       keyboardType: TextInputType.emailAddress,
                                       prefixIcon: Padding(
                                         padding: const EdgeInsets.only(left: 15, right: 10),
@@ -468,10 +580,7 @@ class _EditscreenState extends State<Editscreen> {
                                           ),
                                           child: ElevatedButton(
 
-                                            onPressed: () {
-                                              // Add your action here
-                                              print("Button Pressed!");
-                                            },
+                                            onPressed: _updateProfile,
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: const Color(0xFF147B72),
 
