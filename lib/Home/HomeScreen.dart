@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
 import 'package:climahealth/icons/eva_icons.dart';
 import 'HomeScreenPage/Doctor/NearDoctorScreen.dart';
 import 'HomeScreenPage/Services/AppointmentScreen.dart';
@@ -6,11 +8,12 @@ import 'HomeScreenPage/Services/FaqScreen.dart';
 import 'HomeScreenPage/Services/SupportChatScreen.dart';
 import 'HomeScreenPage/Services/VaccinationScreen.dart';
 import 'HomeScreenPage/Doctor/DoctorDetailScreen.dart';
-import 'HomeScreenPage/Doctor/NearDoctorScreen.dart';
 import 'HomeScreenPage/Specialisation/DoctorListScreen.dart';
 import 'HomeScreenPage/Specialisation/SpecializeDoctorScreen.dart'; // for Doctor model
 
 import 'package:climahealth/services/api_service.dart';
+
+// UI REFACTOR ONLY: API AND BACKEND LOGIC PRESERVED
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,13 +22,33 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   String username = "";
+
+  // Animation Controller for borders only
+  late AnimationController _borderProgressController;
+  late Animation<double> _borderAnimation;
 
   @override
   void initState() {
     super.initState();
     _loadUserName();
+
+    // Endless Chasing Progress Border Animation
+    _borderProgressController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 24), // Speed control
+    )..repeat(); // Endless one-directional loop
+
+    _borderAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _borderProgressController, curve: Curves.linear),
+    );
+  }
+
+  @override
+  void dispose() {
+    _borderProgressController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserName() async {
@@ -38,46 +61,33 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-
-  //TODO: This is the Custom Card View For Showing the doctor Sepecialtion
   Widget _buildDoctorSpecialisationCard(
-      BuildContext context,
-      IconData icon,
-      String title,
-      String subtitle) {
-
+      BuildContext context, IconData icon, String title, String subtitle) {
     return Card(
       elevation: 3,
       color: Colors.white,
       shape: RoundedRectangleBorder(
         side: const BorderSide(
-          color: Color(0xFF147B72), // Border color
+          color: Color(0xFF147B72),
           width: 0.8,
         ),
         borderRadius: BorderRadius.circular(18),
-
       ),
       margin: const EdgeInsets.symmetric(vertical: 6),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-
-
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  DoctorListScreen(specialization: title),
+              builder: (context) => DoctorListScreen(specialization: title),
             ),
           );
         },
-
         child: Padding(
           padding: const EdgeInsets.all(13),
           child: Row(
             children: [
-
-
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -90,15 +100,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   size: 24,
                 ),
               ),
-
               const SizedBox(width: 16),
-
-              /// Text Section
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-
                     Text(
                       title,
                       style: const TextStyle(
@@ -106,7 +112,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-
                     Text(
                       subtitle,
                       style: const TextStyle(
@@ -125,7 +130,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   Widget _buildDoctorCard(
       BuildContext context,
       String image,
@@ -140,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
           elevation: 10,
           shape: RoundedRectangleBorder(
             side: const BorderSide(
-              color: Color(0xFF147B72), // Border color
+              color: Color(0xFF147B72),
               width: 0.8,
             ),
             borderRadius: BorderRadius.circular(18),
@@ -226,12 +230,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   Widget _serviceTile(String title, Widget screen) {
-
     return InkWell(
-      onTap: (){
-        Navigator.push(context, MaterialPageRoute(builder: (context)=>screen),);
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => screen),
+        );
       },
       borderRadius: BorderRadius.circular(40),
       child: Container(
@@ -273,6 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -284,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
             top: -190,
             left: 100,
             child: Transform.rotate(
-              angle: 0.785, // 45 degrees
+              angle: 0.785,
               child: Container(
                 width: 420,
                 height: 400,
@@ -292,75 +298,68 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          // Animated Progress Border 1
           Positioned(
             top: -160,
             left: 20,
             child: Transform.rotate(
               angle: 0.785,
-              child: Container(
+              child: AnimatedShapeBorder(
+                animation: _borderAnimation,
                 width: 400,
                 height: 400,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: const Color(0xFF3AA79B).withOpacity(0.2),
-                    width: 15,
-                  ),
-                ),
+                strokeWidth: 15,
+                trackColor: const Color(0xFF3AA79B).withOpacity(0.2),
               ),
             ),
           ),
+          // Animated Progress Border 2
           Positioned(
             top: -120,
             left: -120,
             child: Transform.rotate(
               angle: 0.785,
-              child: Container(
+              child: AnimatedShapeBorder(
+                animation: _borderAnimation,
                 width: 400,
                 height: 400,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: const Color(0xFF06544D).withOpacity(0.3),
-                    width: 8,
-                  ),
-                ),
+                strokeWidth: 8,
+                trackColor: const Color(0xFF06544D).withOpacity(0.3),
               ),
             ),
           ),
+          // Animated Progress Border 3
           Positioned(
             top: -50,
             left: -40,
             child: Transform.rotate(
               angle: 0.785,
-              child: Container(
+              child: AnimatedShapeBorder(
+                animation: _borderAnimation,
                 width: 250,
                 height: 250,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: const Color(0xFF06544D).withOpacity(0.4),
-                    width: 2,
-                  ),
-                ),
+                strokeWidth: 2,
+                trackColor: const Color(0xFF06544D).withOpacity(0.4),
               ),
             ),
           ),
 
-
+          // --- STATIC LOGO (GLOW REMOVED) ---
           Center(
             child: Image.asset(
               'assets/images/climaai.png',
               width: 180,
               height: 180,
-              color: const Color(0xFF0C524C).withOpacity(0.4), // apply tint color
+              color: const Color(0xFF0C524C).withOpacity(0.4),
             ),
           ),
-
 
           // --- BOTTOM RIGHT BACKGROUND SHAPES ---
           Positioned(
             bottom: -190,
             right: 100,
             child: Transform.rotate(
-              angle: 0.785, // 45 degrees
+              angle: 0.785,
               child: Container(
                 width: 420,
                 height: 400,
@@ -373,15 +372,12 @@ class _HomeScreenState extends State<HomeScreen> {
             right: 20,
             child: Transform.rotate(
               angle: 0.785,
-              child: Container(
+              child: AnimatedShapeBorder(
+                animation: _borderAnimation,
                 width: 400,
                 height: 400,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: const Color(0xFF3AA79B).withOpacity(0.2),
-                    width: 15,
-                  ),
-                ),
+                strokeWidth: 15,
+                trackColor: const Color(0xFF3AA79B).withOpacity(0.2),
               ),
             ),
           ),
@@ -390,15 +386,12 @@ class _HomeScreenState extends State<HomeScreen> {
             right: -120,
             child: Transform.rotate(
               angle: 0.785,
-              child: Container(
+              child: AnimatedShapeBorder(
+                animation: _borderAnimation,
                 width: 400,
                 height: 400,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: const Color(0xFF06544D).withOpacity(0.3),
-                    width: 8,
-                  ),
-                ),
+                strokeWidth: 8,
+                trackColor: const Color(0xFF06544D).withOpacity(0.3),
               ),
             ),
           ),
@@ -407,19 +400,15 @@ class _HomeScreenState extends State<HomeScreen> {
             right: -40,
             child: Transform.rotate(
               angle: 0.785,
-              child: Container(
+              child: AnimatedShapeBorder(
+                animation: _borderAnimation,
                 width: 250,
                 height: 250,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: const Color(0xFF06544D).withOpacity(0.3),
-                    width: 2,
-                  ),
-                ),
+                strokeWidth: 2,
+                trackColor: const Color(0xFF06544D).withOpacity(0.3),
               ),
             ),
           ),
-
 
           // --- FOREGROUND SCROLLABLE CONTENT ---
           Positioned.fill(
@@ -430,13 +419,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     const SizedBox(height: 20),
 
-                    // TODO: HEADER
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Left part: The gradient container and username
                         Stack(
-                          alignment: Alignment.centerLeft, // Aligns the text vertically in the center
+                          alignment: Alignment.centerLeft,
                           children: [
                             Container(
                               height: 60,
@@ -454,26 +441,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             ),
-
-                            // Padding applied here so the text moves inward, but the container stays at the edge
                             Padding(
                               padding: const EdgeInsets.only(left: 20.0),
                               child: Text(
                                 "Hello $username 👋",
                                 style: const TextStyle(
-                                  fontSize: 26, // Reduced slightly to fit well within 60 height
+                                  fontSize: 26,
                                   fontWeight: FontWeight.w600,
                                   fontFamily: "Tinos",
-                                  color: Colors.white, // Changed to white for readability on the dark background
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
                           ],
                         ),
-
-                        // Right part: Bell icon
                         Padding(
-                          padding: const EdgeInsets.only(right: 20.0), // Padding to align with the rest of the page
+                          padding: const EdgeInsets.only(right: 20.0),
                           child: IconButton(
                             icon: const Icon(
                               EvaIcons.bell_outline,
@@ -489,11 +472,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("No Notification Available Right Now......"),
-                                    backgroundColor: Color(0xFF147B72),
-                                    behavior: SnackBarBehavior.floating,
-                                  )
+                                const SnackBar(
+                                  content: Text("No Notification Available Right Now......"),
+                                  backgroundColor: Color(0xFF147B72),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
                               );
                             },
                           ),
@@ -503,15 +486,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     const SizedBox(height: 25),
 
-                    // --- ALL SCROLLABLE CONTENT BELOW THE HEADER ---
-                    // We wrap everything else in horizontal padding so it aligns properly
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-
-                          // TODO: SEARCH BAR
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                             decoration: BoxDecoration(
@@ -548,7 +527,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           const SizedBox(height: 25),
 
-                          // TODO: POPULAR SPECIALISATION
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -557,14 +535,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w600,
-                                    fontFamily:"Tinos"
-                                ),
+                                    fontFamily: "Tinos"),
                               ),
                               GestureDetector(
                                 onTap: () {
                                   Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context)=>SpecializedoctorScreen())
+                                    context,
+                                    MaterialPageRoute(builder: (context) => SpecializedoctorScreen()),
                                   );
                                 },
                                 child: const Text(
@@ -582,7 +559,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           const SizedBox(height: 15),
 
-                          // TODO: Using Your Custom Cards
                           Column(
                             children: [
                               _buildDoctorSpecialisationCard(
@@ -591,7 +567,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 "Cardiologist",
                                 "25 Doctors",
                               ),
-                              const SizedBox(height: 10), // Adding small spacing between items
+                              const SizedBox(height: 10),
                               _buildDoctorSpecialisationCard(
                                 context,
                                 Icons.psychology,
@@ -610,7 +586,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           const SizedBox(height: 25),
 
-                          //TODO: NEAR DOCTOR
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -619,12 +594,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w600,
-                                    fontFamily:"Tinos"
-                                ),
+                                    fontFamily: "Tinos"),
                               ),
                               GestureDetector(
                                 onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (context)=>NearDoctorScreen()));
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => NearDoctorScreen()),
+                                  );
                                 },
                                 child: const Text(
                                   "See all",
@@ -678,7 +655,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           const SizedBox(height: 25),
 
-                          //TODO: SERVICES SECTION
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: const [
@@ -687,8 +663,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w600,
-                                    fontFamily:"Tinos"
-                                ),
+                                    fontFamily: "Tinos"),
                               ),
                             ],
                           ),
@@ -698,17 +673,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _serviceTile("Appointments",AppointmentScreen()),
+                              _serviceTile("Appointments", AppointmentScreen()),
                               const SizedBox(height: 10),
-                              _serviceTile("Vaccination calendar",VaccinationScreen()),
+                              _serviceTile("Vaccination calendar", VaccinationScreen()),
                               const SizedBox(height: 10),
-                              _serviceTile("FAQ",FaqScreen()),
+                              _serviceTile("FAQ", FaqScreen()),
                               const SizedBox(height: 10),
-                              _serviceTile("Support chat",SupportChatScreen()),
+                              _serviceTile("Support chat", SupportChatScreen()),
                               const SizedBox(height: 80),
                             ],
                           ),
-
                         ],
                       ),
                     ),
@@ -720,5 +694,105 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+}
+
+// -------------------------------------------------------------
+// NEW CLASSES: For drawing the Endless Chasing Border
+// -------------------------------------------------------------
+
+class AnimatedShapeBorder extends AnimatedWidget {
+  final double width;
+  final double height;
+  final double strokeWidth;
+  final Color trackColor;
+
+  const AnimatedShapeBorder({
+    Key? key,
+    required Animation<double> animation,
+    required this.width,
+    required this.height,
+    required this.strokeWidth,
+    required this.trackColor,
+  }) : super(key: key, listenable: animation);
+
+  @override
+  Widget build(BuildContext context) {
+    final animation = listenable as Animation<double>;
+    return CustomPaint(
+      size: Size(width, height),
+      painter: _BorderProgressPainter(
+        progress: animation.value,
+        trackColor: trackColor,
+        strokeWidth: strokeWidth,
+      ),
+    );
+  }
+}
+
+class _BorderProgressPainter extends CustomPainter {
+  final double progress;
+  final Color trackColor;
+  final double strokeWidth;
+
+  _BorderProgressPainter({
+    required this.progress,
+    required this.trackColor,
+    required this.strokeWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final path = Path()..addRect(rect);
+
+    // 1. Draw the static, faded track (base border)
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    canvas.drawPath(path, trackPaint);
+
+    // 2. Continuous Color Pulse
+    final colorProgress = (math.sin((progress * 2 * math.pi) - (math.pi / 2)) + 1) / 2;
+    final activeColor = Color.lerp(
+      const Color(0xFF44B08C), // Light Teal
+      const Color(0xFF0C524C), // Dark Green
+      colorProgress,
+    )!;
+
+    // 3. Setup the glowing chasing line
+    final progressPaint = Paint()
+      ..color = activeColor
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.square
+      ..strokeWidth = strokeWidth;
+
+    // 4. Calculate exactly where the tail and head of the line should be
+    for (final metric in path.computeMetrics()) {
+      final double pathLength = metric.length;
+      final double tailLength = pathLength * 0.35;
+
+      final double headPosition = pathLength * progress;
+      final double tailPosition = headPosition - tailLength;
+
+      if (tailPosition < 0) {
+        final wrapExtract = metric.extractPath(pathLength + tailPosition, pathLength);
+        canvas.drawPath(wrapExtract, progressPaint);
+
+        final headExtract = metric.extractPath(0.0, headPosition);
+        canvas.drawPath(headExtract, progressPaint);
+      } else {
+        final extractPath = metric.extractPath(tailPosition, headPosition);
+        canvas.drawPath(extractPath, progressPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BorderProgressPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.trackColor != trackColor ||
+        oldDelegate.strokeWidth != strokeWidth;
   }
 }

@@ -5,8 +5,8 @@ import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
 
 class ApiService {
-  //static const String baseUrl="http://10.0.2.2:3000";
-  static const String baseUrl="http://10.229.214.86:3000";
+  static const String baseUrl="http://10.0.2.2:3000";
+  //static const String baseUrl="http://10.229.214.86:3000";
 
 
 

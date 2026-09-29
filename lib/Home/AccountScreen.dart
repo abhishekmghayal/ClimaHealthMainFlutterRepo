@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui';
 import 'package:climahealth/Home/EditScreen.dart';
 import 'package:flutter/material.dart';
@@ -255,26 +256,16 @@ class _AccountScreenState extends State<AccountScreen> {
       backgroundColor: const Color(0xFFF5F7FA),
       body: Stack(
         children: [
+          // Global Background Animation
+          const Positioned.fill(
+            child: AnimatedNetworkBackground(),
+          ),
+          
           // Background Gradient that spans the whole top, going behind status bar
           SizedBox(
             height: 205.h,
             width: double.infinity,
             child: Container(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-
-                children: [
-                  Text(
-                    "My Profile ⌮ ",
-                    style: TextStyle(
-                      fontFamily: "Tinos",
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      fontSize: 23.sp,
-                    ),
-                  )
-                ],
-              ),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF147B72), Color(0xFF0C524C)],
@@ -284,6 +275,41 @@ class _AccountScreenState extends State<AccountScreen> {
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(40.r),
                   bottomRight: Radius.circular(40.r),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40.r),
+                  bottomRight: Radius.circular(40.r),
+                ),
+                child: Stack(
+                  children: [
+                    // Isolated White Animation for header only
+                    Positioned.fill(
+                      child: AnimatedNetworkBackground(
+                        lineColor: Colors.white.withOpacity(0.5),
+                        isHeader: true,
+                      ),
+                    ),
+                    SafeArea(
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "My Profile ⌮ ",
+                              style: TextStyle(
+                                fontFamily: "Tinos",
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                fontSize: 23.sp,
+                              ),
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -372,9 +398,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                       ),
                                       SizedBox(height: 4.h),
                                       Text(
-
                                         email,
-
                                         style: TextStyle(
                                           fontSize: 12.sp,
                                           color: Colors.grey.shade600,
@@ -425,8 +449,8 @@ class _AccountScreenState extends State<AccountScreen> {
                             title: "Payment Method",
                             onTap: () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Text(
+                                const SnackBar(
+                                  content: Text(
                                       "Payment Method screen is coming soon!"),
                                   duration: Duration(seconds: 2),
                                 ),
@@ -717,5 +741,147 @@ class _AccountScreenState extends State<AccountScreen> {
       },
     );
   }
+}
+
+class AnimatedNetworkBackground extends StatefulWidget {
+  final Color lineColor;
+  final bool isHeader;
+  
+  const AnimatedNetworkBackground({
+    super.key, 
+    this.lineColor = const Color(0xFF147B72),
+    this.isHeader = false,
+  });
+
+  @override
+  State<AnimatedNetworkBackground> createState() => _AnimatedNetworkBackgroundState();
+}
+
+class _AnimatedNetworkBackgroundState extends State<AnimatedNetworkBackground>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 6000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: CustomPaint(
+        painter: NetworkPainter(
+          animation: _controller, 
+          lineColor: widget.lineColor,
+          isHeader: widget.isHeader,
+        ),
+        size: Size.infinite,
+      ),
+    );
+  }
+}
+
+class NetworkPainter extends CustomPainter {
+  final Animation<double> animation;
+  final Color lineColor;
+  final bool isHeader;
+
+  static const Color primaryTeal = Color(0xFF147B72);
+  static const Color secondaryTeal = Color(0xFF0C524C);
+
+  NetworkPainter({
+    required this.animation, 
+    required this.lineColor,
+    this.isHeader = false,
+  }) : super(repaint: animation);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final glowDotPaint = Paint()
+      ..color = lineColor.withOpacity(0.9)
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+
+    final solidDotPaint = Paint()
+      ..color = lineColor.withOpacity(0.5)
+      ..style = PaintingStyle.fill;
+
+    final double w = size.width;
+    final double h = size.height;
+
+    final List<Offset> baseNodes = isHeader ? [
+      // Attractive minimal spread for header
+      Offset(w * 0.02, h * 0.05), Offset(w * 0.98, h * 0.05),
+      Offset(w * 0.05, h * 0.65), Offset(w * 0.95, h * 0.70),
+      Offset(w * 0.25, h * 0.85), Offset(w * 0.75, h * 0.90),
+      // Center bottom dot
+      Offset(w * 0.50, h * 0.95),
+    ] : [
+      // Exact ClimaScreen Nodes
+      Offset(w * 0.75, h * 0.05), Offset(w * 0.95, h * 0.10),
+      Offset(w * 0.65, h * 0.15), Offset(w * 0.85, h * 0.22),
+      Offset(w * 1.05, h * 0.25),
+      Offset(w * 0.90, h * 0.35), Offset(w * 0.70, h * 0.40),
+      Offset(w * 0.98, h * 0.48), Offset(w * 0.82, h * 0.55),
+      Offset(w * 0.65, h * 0.60), Offset(w * 0.95, h * 0.65),
+      Offset(w * 0.75, h * 0.72), Offset(w * 0.55, h * 0.78),
+      Offset(w * 0.90, h * 0.82), Offset(w * 0.70, h * 0.88),
+      Offset(w * 0.45, h * 0.92), Offset(w * 0.85, h * 0.96),
+      Offset(w * 0.60, h * 1.02), Offset(w * 0.95, h * 1.05),
+      Offset(w * 0.15, h * 0.08), Offset(w * 0.05, h * 0.18),
+      Offset(w * 0.25, h * 0.25), Offset(w * 0.10, h * 0.35),
+      Offset(w * 0.20, h * 0.65), Offset(w * 0.05, h * 0.75),
+      Offset(w * 0.25, h * 0.85), Offset(w * 0.12, h * 0.95),
+      Offset(w * 0.45, h * 0.15), Offset(w * 0.40, h * 0.70),
+    ];
+    final double connectionDistance = isHeader ? w * 0.5 : w * 0.35;
+    final double animValue = animation.value * 2 * pi;
+
+    for (int i = 0; i < baseNodes.length; i++) {
+      for (int j = i + 1; j < baseNodes.length; j++) {
+        double distance = (baseNodes[i] - baseNodes[j]).distance;
+
+        if (distance < connectionDistance) {
+          double baseOpacity = 1.0 - (distance / connectionDistance);
+
+          final staticLinePaint = Paint()
+            ..color = lineColor.withOpacity(baseOpacity * 0.1)
+            ..strokeWidth = 0.8
+            ..style = PaintingStyle.stroke;
+          canvas.drawLine(baseNodes[i], baseNodes[j], staticLinePaint);
+
+          double phase = (i * 0.4) + (j * 0.7);
+          double progress = (sin(animValue + phase) + 1) / 2;
+
+          Offset animatedEndPoint = Offset.lerp(baseNodes[i], baseNodes[j], progress)!;
+
+          final animatedLinePaint = Paint()
+            ..color = lineColor.withOpacity(baseOpacity * 0.9)
+            ..strokeWidth = 1.5
+            ..style = PaintingStyle.stroke;
+
+          canvas.drawLine(baseNodes[i], animatedEndPoint, animatedLinePaint);
+        }
+      }
+    }
+
+    for (var node in baseNodes) {
+      canvas.drawCircle(node, 5.0, glowDotPaint);
+      canvas.drawCircle(node, 1.9, solidDotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant NetworkPainter oldDelegate) => true;
 }
 

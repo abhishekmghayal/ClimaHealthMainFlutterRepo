@@ -48,7 +48,11 @@ class _FavouriteScreenState extends State<FavouriteScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20.r))),
+      shape: RoundedRectangleBorder(
+
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+          side: BorderSide(color: const Color(0xFF0C524C).withValues(alpha: 1.0), width: 1.0),
+      ),
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.all(20.w).copyWith(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20.h),
